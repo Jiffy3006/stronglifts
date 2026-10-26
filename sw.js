@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stronglifts-v1';
+const CACHE_NAME = 'stronglifts-v2';
 const assets = [
   './index.html',
   './app.js',
