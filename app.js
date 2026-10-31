@@ -326,6 +326,11 @@ function vSetup() {
     `).join('');
 
     const isChecked = S.topBackOff[id] ? 'checked' : '';
+    const topBoHtml = id === 'deadlift' ? '' : `
+      <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; margin-top: 4px; cursor: pointer;">
+        <input type="checkbox" name="topbo_${id}" ${isChecked}> 1 Topsatz + 4 Back-off Sätze (-10%)
+      </label>
+    `;
 
     return `
     <div class="line" style="flex-direction: column; align-items: stretch; gap: 6px; margin-bottom: 16px; border-bottom: 1px solid var(--line); padding-bottom: 12px;">
@@ -336,9 +341,7 @@ function vSetup() {
       <select name="variant_${id}" style="padding: 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--card); color: var(--text); font-weight: 500;">
         ${optionsHtml}
       </select>
-      <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; margin-top: 4px; cursor: pointer;">
-        <input type="checkbox" name="topbo_${id}" ${isChecked}> 1 Topsatz + 4 Back-off Sätze (-10%)
-      </label>
+      ${topBoHtml}
     </div>`;
   }).join('');
 
@@ -371,17 +374,11 @@ function vSetup() {
     </details>
 
     <details class="card" style="margin-bottom: 12px;">
-      <summary style="font-weight: bold; font-size: 16px; cursor: pointer; padding: 4px 0;">⚙️ Stufen & Steigerung</summary>
+      <summary style="font-weight: bold; font-size: 16px; cursor: pointer; padding: 4px 0;">⚙️ Steigerung & Pausen</summary>
       <div style="margin-top: 12px;">
-        <label class="line"><span>Alle Übungen außer Kreuzheben</span><span><input type="number" inputmode="decimal" step="0.5" min="0" value="${S.steps.other ?? 2.5}" name="step_other"> kg</span></label>
-        <label class="line"><span>Kreuzheben</span><span><input type="number" inputmode="decimal" step="0.5" min="0" value="${S.steps.deadlift ?? 5}" name="step_deadlift"> kg</span></label>
-      </div>
-    </details>
-
-    <details class="card" style="margin-bottom: 12px;">
-      <summary style="font-weight: bold; font-size: 16px; cursor: pointer; padding: 4px 0;">⏱️ Pause & Timer</summary>
-      <div style="margin-top: 12px;">
-        <label class="line"><span>Timer nach jedem Satz starten</span><input type="checkbox" name="auto" ${S.settings.autoTimer ? 'checked' : ''}></label>
+        <label class="line"><span>Steigerung (Standard)</span><span><input type="number" inputmode="decimal" step="0.5" min="0" value="${S.steps.other ?? 2.5}" name="step_other"> kg</span></label>
+        <label class="line"><span>Kreuzheben (Steigerung)</span><span><input type="number" inputmode="decimal" step="0.5" min="0" value="${S.steps.deadlift ?? 5}" name="step_deadlift"> kg</span></label>
+        <label class="line" style="margin-top: 12px;"><span>Timer nach jedem Satz starten</span><input type="checkbox" name="auto" ${S.settings.autoTimer ? 'checked' : ''}></label>
         <label class="line"><span>Pausenlänge (Standard)</span><span><input type="number" inputmode="numeric" min="0" step="10" value="${S.settings.rest}" name="rest"> s</span></label>
       </div>
     </details>
@@ -414,7 +411,7 @@ function render() {
   }
 }
 
-/* ---------- Export / Import (Aktualisiert für Web Share API) ---------- */
+/* ---------- Export / Import ---------- */
 function stamp() {
   const d = new Date();
   const pad = n => String(n).padStart(2, '0');
@@ -424,7 +421,6 @@ function stamp() {
 async function download(name, text, mime) {
   const blob = new Blob([text], { type: mime });
   
-  // Nutzung der Web Share API für Handys/PWAs im Standalone-Modus
   if (navigator.canShare && navigator.canShare({ files: [new File([blob], name, { type: mime })] })) {
     try {
       const file = new File([blob], name, { type: mime });
@@ -441,7 +437,6 @@ async function download(name, text, mime) {
     }
   }
 
-  // Fallback für Browser / Desktop ohne Web Share API
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = name; document.body.append(a); a.click(); a.remove();
@@ -837,7 +832,9 @@ document.addEventListener('submit', e => {
       const variant = fdData.get(`variant_${id}`);
       if (variant) S.mainNames[id] = variant;
 
-      S.topBackOff[id] = fdData.get(`topbo_${id}`) === 'on';
+      if (id !== 'deadlift') {
+        S.topBackOff[id] = fdData.get(`topbo_${id}`) === 'on';
+      }
 
       const val = parseFloat(String(fdData.get(`w_${id}`)).replace(',', '.'));
       if (!isNaN(val) && val >= 0) {
