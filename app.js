@@ -2,7 +2,7 @@
 const KEY = 'sl5x5.v1';
 
 const MAIN_DEFAULTS = { 
-  squat: 'Kniebeuge (Low Bar)', 
+  squat: 'Kniebeuge', 
   bench: 'Bankdrücken', 
   row: 'Langhantelrudern', 
   ohp: 'Schulterdrücken', 
