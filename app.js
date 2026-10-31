@@ -2,7 +2,7 @@
 const KEY = 'sl5x5.v1';
 
 const MAIN_DEFAULTS = { 
-  squat: 'Kniebeuge', 
+  squat: 'Kniebeuge (Low Bar)', 
   bench: 'Bankdrücken', 
   row: 'Langhantelrudern', 
   ohp: 'Schulterdrücken', 
@@ -414,13 +414,40 @@ function render() {
   }
 }
 
-/* ---------- Export / Import ---------- */
-function download(name, text, mime) {
-  const url = URL.createObjectURL(new Blob([text], { type: mime }));
+/* ---------- Export / Import (Aktualisiert für Web Share API) ---------- */
+function stamp() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
+}
+
+async function download(name, text, mime) {
+  const blob = new Blob([text], { type: mime });
+  
+  // Nutzung der Web Share API für Handys/PWAs im Standalone-Modus
+  if (navigator.canShare && navigator.canShare({ files: [new File([blob], name, { type: mime })] })) {
+    try {
+      const file = new File([blob], name, { type: mime });
+      await navigator.share({
+        files: [file],
+        title: name,
+        text: 'StrongLifts Export / Backup'
+      });
+      return;
+    } catch (e) {
+      if (e.name !== 'AbortError') {
+        console.log('Share abgebrochen oder nicht möglich', e);
+      }
+    }
+  }
+
+  // Fallback für Browser / Desktop ohne Web Share API
+  const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = name; document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
 const csvText = () => {
   const q = v => '"' + String(v).replace(/"/g, '""') + '"';
   const rows = ['Datum_Uhrzeit;Workout;Übung;Satz;Wiederholungen;Gewicht_kg'];
@@ -431,6 +458,7 @@ const csvText = () => {
   });
   return '\ufeff' + rows.join('\n');
 };
+
 const jsonText = () => JSON.stringify({ app: 'sl5x5', version: 1, exported: new Date().toISOString(),
   mainNames: S.mainNames, topBackOff: S.topBackOff, customNames: S.customNames, weights: S.weights, steps: S.steps, fails: S.fails, deloads: S.deloads, next: S.next, history: S.history, settings: S.settings }, null, 2);
 
@@ -440,6 +468,7 @@ const normalize = h => ({
     id: x.id, name: x.name, weight: x.weight, target: x.target || x.targetReps || 5, sets: x.sets || x.completedSets || [], isTopSet: x.isTopSet || false, isBackOff: x.isBackOff || false, isSuperset: x.isSuperset || false
   }))
 });
+
 async function importFile(file) {
   if (!file) return;
   try {
